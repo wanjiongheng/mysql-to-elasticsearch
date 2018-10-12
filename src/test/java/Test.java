@@ -8,6 +8,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -144,5 +147,88 @@ public class Test {
             System.out.println("高亮显示的是：" + fragments);
         }
         System.out.println(goodsList);
+    }
+
+
+    @org.junit.Test
+    public void testSearch() throws IOException {
+        System.out.println("-------------------------------------------------------");
+        // 创建searchRequest
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("test_goods");
+        searchRequest.types("goods");
+
+        // 创建searchSourceBuilder
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+        // 自己的搜索条件
+        // MatchAllQueryBuilder matchAllQueryBuilder = new MatchAllQueryBuilder();
+
+
+        // 根据关键字搜索
+        String keyword = "中华针织衫你懂";
+        //搜索条件
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        //添加关键字查询
+
+        BoolQueryBuilder keyWordBoolQueryBuilder = QueryBuilders.boolQuery();
+        keyWordBoolQueryBuilder.should(QueryBuilders.prefixQuery("name", keyword));
+        keyWordBoolQueryBuilder.should(QueryBuilders.prefixQuery("name.ik_smart_pinyin_analyzer", keyword));
+        boolQueryBuilder.must(keyWordBoolQueryBuilder);
+
+        //过滤筛选
+        Long systemTime = System.currentTimeMillis();
+        //过滤筛选
+        BoolQueryBuilder boolFilterBuilder = QueryBuilders.boolQuery();
+        //是否启用 0：是1：
+        boolFilterBuilder.must(QueryBuilders.termQuery("useState",0));
+        //未删除信息
+        boolFilterBuilder.must(QueryBuilders.termQuery("flag", 0));
+
+        BoolQueryBuilder boolQuery = new BoolQueryBuilder();
+        boolQuery.must(boolQueryBuilder);
+        boolQuery.must(boolFilterBuilder);
+        searchSourceBuilder.query(boolQuery);
+
+        searchSourceBuilder.from(0);
+        searchSourceBuilder.size(1000);
+        searchRequest.source(searchSourceBuilder);
+
+        // 同步执行
+        SearchResponse searchResponse = ElasticsearchClient.getClient().search(searchRequest);
+        RestStatus status = searchResponse.status();
+        // System.out.println("返回的状态码：" + status);
+        // 请求时间
+        TimeValue take = searchResponse.getTook();
+        // System.out.println("请求时间：" + take.toString());
+        // 是否是提前中止
+        Boolean terminatedEarly = searchResponse.isTerminatedEarly();
+        // System.out.println("是否提前中止：" + terminatedEarly);
+        boolean timedOut = searchResponse.isTimedOut();
+        // System.out.println("是否超时：" + timedOut);
+        if ("ok".equalsIgnoreCase(status.toString())) {
+            // 处理文档
+            SearchHits hits = searchResponse.getHits();
+            // 总数
+            long totalHits = hits.getTotalHits();
+            System.out.println(totalHits);
+            // 最大分数
+            float maxScore = hits.getMaxScore();
+
+            // 遍历每个搜索结果
+            SearchHit[] hitArray = hits.getHits();
+
+            for (SearchHit hit : hitArray) {
+                String index = hit.getIndex();
+                String type = hit.getType();
+                String id = hit.getId();
+                float score = hit.getScore();
+                System.out.print(index + "  " + type + "   " + id + "   " + score + "  :  ");
+                String sourceAsString = hit.getSourceAsString();
+                Goods goods = JSONObject.parseObject(sourceAsString, Goods.class);
+                System.out.println(goods);
+            }
+        }
+        System.out.println("----------------------------------------------------------");
     }
 }

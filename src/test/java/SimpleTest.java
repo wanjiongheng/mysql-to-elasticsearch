@@ -13,7 +13,6 @@ public class SimpleTest {
         ESField annotation = field.getAnnotation(ESField.class);
         System.out.println(annotation);
         System.out.println(field.getName());
-
     }
 
 
