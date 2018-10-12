@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:mvc="http://www.springframework.org/schema/mvc"
+	   xmlns:mybatis="http://mybatis.org/schema/mybatis-spring"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-4.3.xsd
+      http://mybatis.org/schema/mybatis-spring
+	  http://mybatis.org/schema/mybatis-spring.xsd
+      http://www.springframework.org/schema/tx
+      http://www.springframework.org/schema/tx/spring-tx-4.3.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+	<!-- 自动扫描 -->
+    <context:component-scan base-package="com.netopstec" />
+	<!-- 自动扫描mapper文件 可以使用下面两种方式-->
+	<mybatis:scan base-package="com.netopstec.dao" />
+	<!--<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.javen.dao" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+	</bean>-->
+	<!-- 加载数据库属性配置文件 -->
+	<context:property-placeholder location="classpath:db/db.properties" ignore-unresolvable="true" />
+    
+    <!-- 数据库连接池 alibaba durid 配置 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<!-- 可配可不配，默认会根据URL属性 选择不同的驱动 -->
+		<property name="driverClassName" value="${db.driverClassName}" />
+		<property name="url" value="${db.url}" />
+		<property name="username" value="${db.username}" />
+		<property name="password" value="${db.password}" />
+	</bean>
+	 <!-- 配置spring与mybatis结合 -->  
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">  
+    	<!-- 添加sql的日志记录 -->
+    	<property name="configLocation" value="classpath:db/mybatis-config.xml"></property>
+    	<property name="dataSource">
+			<ref bean="dataSource" />
+		</property>
+        <!-- 自动扫描mapping.xml文件 -->  
+        <property name="mapperLocations">
+        	<array>
+        		<value>classpath:mapping/*.xml</value>
+        	</array>
+        </property>
+    </bean>
+    <!-- (事务管理)transaction manager, use JtaTransactionManager for global tx -->  
+   
+    <!-- 这个必须配置，否则事物不起作用 -->  
+ 	<bean id="transactionManager"  
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager">  
+        <property name="dataSource" ref="dataSource" />  
+    </bean>
+	<!-- 使用注解事务，需要添加Transactional注解属性 -->
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	<!--启用最新的注解器、映射器-->
+	<mvc:annotation-driven/>
+</beans>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.netopstec.dao.GoodsMapper">
+    <resultMap id="goodsMap" type="com.netopstec.entity.Goods">
+        <result column="create_time" property="createTime" javaType="Long" />
+        <result column="modify_time" property="modifyTime" javaType="Long" />
+        <result column="use_state" property="useState" javaType="int" />
+    </resultMap>
+    <select id="findAll" resultMap="goodsMap">
+        select * from goods
+    </select>
+</mapper>
