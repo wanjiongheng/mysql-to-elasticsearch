@@ -254,4 +254,245 @@ public class ElasticsearchClient {
 
 
 
+    /*
+    微牛 创建goods的index如下
+    {
+	"state": "open",
+	"settings": {
+		"index": {
+			"number_of_shards": "3",
+			"provided_name": "cloth_goods_v2",
+			"creation_date": "1538276084795",
+			"analysis": {
+				"filter": {
+					"my_pinyin": {
+						"keep_joined_full_pinyin": "true",
+						"none_chinese_pinyin_tokenize": "false",
+						"keep_none_chinese_in_joined_full_pinyin": "true",
+						"keep_original": "true",
+						"keep_first_letter": "false",
+						"keep_separate_first_letter": "false",
+						"type": "pinyin",
+						"keep_full_pinyin": "false"
+					}
+				},
+				"analyzer": {
+					"ik_pinyin_analyzer": {
+						"filter": [
+							"my_pinyin",
+							"word_delimiter"
+						],
+						"type": "custom",
+						"tokenizer": "ik_smart"
+					}
+				}
+			},
+			"number_of_replicas": "2",
+			"uuid": "u3rJHAnPSiO9P7nbIlbPhg",
+			"version": {
+				"created": "6020499"
+			}
+		}
+	},
+	"mappings": {
+		"goods": {
+			"properties": {
+				"name_pinyin": {
+					"type": "keyword"
+				},
+				"flag": {
+					"type": "integer"
+				},
+				"pdaBarCode": {
+					"type": "keyword"
+				},
+				"classifyId": {
+					"type": "long"
+				},
+				"priceTag": {
+					"type": "keyword"
+				},
+				"discount": {
+					"type": "keyword"
+				},
+				"videoPicUrl": {
+					"type": "keyword"
+				},
+				"pic": {
+					"type": "keyword"
+				},
+				"picUrls": {
+					"type": "keyword"
+				},
+				"masterStoreId": {
+					"type": "long"
+				},
+				"modifyTime": {
+					"type": "long"
+				},
+				"returnGoods": {
+					"type": "integer"
+				},
+				"stockMin": {
+					"type": "integer"
+				},
+				"videoUrl": {
+					"type": "keyword"
+				},
+				"seasonId": {
+					"type": "integer"
+				},
+				"measurementUnitId": {
+					"type": "integer"
+				},
+				"brandName_pinyin": {
+					"type": "keyword"
+				},
+				"id": {
+					"type": "long"
+				},
+				"originFrom": {
+					"type": "integer"
+				},
+				"specialOffer": {
+					"type": "integer"
+				},
+				"tvCode": {
+					"type": "long",
+					"fields": {
+						"str_value": {
+							"type": "keyword"
+						}
+					}
+				},
+				"priceLevel0": {
+					"type": "keyword"
+				},
+				"brandName": {
+					"type": "keyword",
+					"fields": {
+						"ik_smart_pinyin_analyzer": {
+							"analyzer": "ik_pinyin_analyzer",
+							"term_vector": "with_positions_offsets",
+							"type": "text"
+						}
+					}
+				},
+				"priceLevel1": {
+					"type": "keyword"
+				},
+				"nextShelfDate": {
+					"type": "long"
+				},
+				"priceLevel2": {
+					"type": "keyword"
+				},
+				"addUserId": {
+					"type": "long"
+				},
+				"priceBuy": {
+					"type": "keyword"
+				},
+				"stockMax": {
+					"type": "integer"
+				},
+				"manufacturerId": {
+					"type": "long"
+				},
+				"picExist": {
+					"type": "integer"
+				},
+				"publicPrice": {
+					"type": "integer"
+				},
+				"priceLevel3": {
+					"type": "keyword"
+				},
+				"storeId": {
+					"type": "long"
+				},
+				"shelfDate": {
+					"type": "long"
+				},
+				"agentUserId": {
+					"type": "long"
+				},
+				"createTime": {
+					"type": "long"
+				},
+				"warehouseId": {
+					"type": "long"
+				},
+				"brandId": {
+					"type": "long"
+				},
+				"packingCount": {
+					"type": "integer"
+				},
+				"name": {
+					"type": "keyword",
+					"fields": {
+						"ik_smart_pinyin_analyzer": {
+							"analyzer": "ik_pinyin_analyzer",
+							"term_vector": "with_positions_offsets",
+							"type": "text"
+						}
+					}
+				},
+				"noteInfo": {
+					"type": "keyword"
+				},
+				"modelNumber": {
+					"type": "keyword",
+					"fields": {
+						"ik_smart_pinyin_analyzer": {
+							"analyzer": "ik_pinyin_analyzer",
+							"term_vector": "with_positions_offsets",
+							"type": "text"
+						}
+					}
+				},
+				"tempRelStatus": {
+					"type": "long"
+				},
+				"modelNumber_pinyin": {
+					"type": "keyword"
+				},
+				"useState": {
+					"type": "integer"
+				},
+				"videoMusic": {
+					"type": "keyword"
+				}
+			}
+		}
+	},
+	"aliases": [
+		"cloth_goods"
+	],
+	"primary_terms": {
+		"0": 1,
+		"1": 1,
+		"2": 1
+	},
+	"in_sync_allocations": {
+		"0": [
+			"KQSotNquR0KXhe_a1L4oeA",
+			"i8xbtDGMQ82boCk4lW7QCg",
+			"PybJfy7mQzOx3fxJtmrcAA"
+		],
+		"1": [
+			"Rl91zaTjQqK6p3J_5zramg",
+			"BlDHPICTR8CvuvBbx05btg",
+			"QgPENjZUSyuzJUzekd1QqQ"
+		],
+		"2": [
+			"PxFEwXOuT0a9IP6NCHGR0Q",
+			"0gub6tCPQMW1Nk9Uh0SxbQ",
+			"VA65nu0URYOO8kByVO95sA"
+		]
+	}
+}
+     */
+
 }
