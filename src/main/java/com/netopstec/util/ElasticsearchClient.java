@@ -46,10 +46,12 @@ public class ElasticsearchClient {
             try {
                 client = new RestHighLevelClient(
                         RestClient.builder(
+                                /*
                                 new HttpHost("111.231.104.73", 9201, "http"),
                                 new HttpHost("111.231.104.73", 9202, "http"),
                                 new HttpHost("111.231.104.73", 9203, "http")
-
+                                */
+                                new HttpHost("111.231.104.73", 9200, "http")
                         ));
             } catch (Exception e) {
                 LOGGER.error("elasticsearch 集群连接失败");
@@ -76,13 +78,14 @@ public class ElasticsearchClient {
      */
     public static boolean insert(String index, String type, String id, String jsonContent) {
         IndexResponse indexResponse = null;
-        try{
+        try {
             // 文档中有多种方式可以组织请求体
-            XContentParser xContentParser = XContentFactory.xContent(XContentType.JSON).createParser(NamedXContentRegistry.EMPTY,jsonContent);
+            XContentParser xContentParser = XContentFactory.xContent(XContentType.JSON).createParser(NamedXContentRegistry.EMPTY, jsonContent);
             IndexRequest indexRequest = new IndexRequest();
             indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
             indexRequest.index(index);
             indexRequest.type(type);
+            indexRequest.id(id);
             indexRequest.source(xContentParser.map());
             indexRequest.create(true);
             indexResponse = getClient().index(indexRequest);
@@ -91,8 +94,8 @@ public class ElasticsearchClient {
             return false;
         }
         ReplicationResponse.ShardInfo shardInfo = indexResponse.getShardInfo();
-        if(shardInfo.getFailed() > 0) {
-            for(ReplicationResponse.ShardInfo.Failure failure : shardInfo.getFailures()){
+        if (shardInfo.getFailed() > 0) {
+            for (ReplicationResponse.ShardInfo.Failure failure : shardInfo.getFailures()) {
                 String reason = failure.reason();
                 LOGGER.error(reason);
             }
@@ -137,21 +140,132 @@ public class ElasticsearchClient {
     }
 
 
-
-
-
     /**
      * 添加索引
      */
-    public static void main(String[] args) throws ClassNotFoundException {
-        String index = "test_goods";
-        Class clazz = Class.forName("com.netopstec.entity.Goods");
-        boolean index1 = createIndex(index, null, clazz);
-        System.out.println("执行结果：" + index1);
+    public static void main(String[] args) {
+//        String index = "test_goods";
+//        Class clazz = Class.forName("com.netopstec.entity.Goods");
+//        boolean index1 = createIndex(index, null, clazz);
+//        System.out.println("执行结果：" + index1);
+        // 创建索引请求
+        CreateIndexRequest request = new CreateIndexRequest("test_goods");
+        // 设置索引的分片和副本
+        request.settings("{\n" +
+                "\t\"index\": {\n" +
+                "\t\t\"number_of_shards\": \"3\",\n" +
+                "\t\t\"number_of_replicas\": \"0\",\n" +
+                "\t\t\"analysis\": {\n" +
+                "\t\t\t\"filter\": {\n" +
+                "\t\t\t\t\"my_pinyin\": {\n" +
+                "\t\t\t\t\t\"keep_joined_full_pinyin\": \"true\",\n" +
+                "\t\t\t\t\t\"none_chinese_pinyin_tokenize\": \"false\",\n" +
+                "\t\t\t\t\t\"keep_none_chinese_in_joined_full_pinyin\": \"true\",\n" +
+                "\t\t\t\t\t\"keep_original\": \"true\",\n" +
+                "\t\t\t\t\t\"keep_first_letter\": \"false\",\n" +
+                "\t\t\t\t\t\"keep_separate_first_letter\": \"false\",\n" +
+                "\t\t\t\t\t\"type\": \"pinyin\",\n" +
+                "\t\t\t\t\t\"keep_full_pinyin\": \"false\"\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"analyzer\": {\n" +
+                "\t\t\t\t\"ik_pinyin_analyzer\": {\n" +
+                "\t\t\t\t\t\"filter\": [\n" +
+                "\t\t\t\t\t\t\"my_pinyin\",\n" +
+                "\t\t\t\t\t\t\"word_delimiter\"\n" +
+                "\t\t\t\t\t],\n" +
+                "\t\t\t\t\t\"type\": \"custom\",\n" +
+                "\t\t\t\t\t\"tokenizer\": \"ik_smart\"\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t}\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "}", XContentType.JSON);
+
+        request.mapping("goods", "{\n" +
+                "\t\"goods\": {\n" +
+                "\t\t\"properties\": {\n" +
+                "\t\t\t\"note\": {\n" +
+                "\t\t\t\t\"type\": \"keyword\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"flag\": {\n" +
+                "\t\t\t\t\"type\": \"integer\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"modifyTime\": {\n" +
+                "\t\t\t\t\"type\": \"long\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"createTime\": {\n" +
+                "\t\t\t\t\"type\": \"long\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"price\": {\n" +
+                "\t\t\t\t\"type\": \"keyword\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"brand_pinyin\": {\n" +
+                "\t\t\t\t\"type\": \"keyword\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"name_pinyin\": {\n" +
+                "\t\t\t\t\"type\": \"keyword\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"name\": {\n" +
+                "\t\t\t\t\"type\": \"keyword\",\n" +
+                "\t\t\t\t\"fields\": {\n" +
+                "\t\t\t\t\t\"ik_smart_pinyin_analyzer\": {\n" +
+                "\t\t\t\t\t\t\"analyzer\": \"ik_pinyin_analyzer\",\n" +
+                "\t\t\t\t\t\t\"term_vector\": \"with_positions_offsets\",\n" +
+                "\t\t\t\t\t\t\"type\": \"text\"\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"id\": {\n" +
+                "\t\t\t\t\"type\": \"long\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"brand\": {\n" +
+                "\t\t\t\t\"type\": \"keyword\",\n" +
+                "\t\t\t\t\"fields\": {\n" +
+                "\t\t\t\t\t\"ik_smart_pinyin_analyzer\": {\n" +
+                "\t\t\t\t\t\t\"analyzer\": \"ik_pinyin_analyzer\",\n" +
+                "\t\t\t\t\t\t\"term_vector\": \"with_positions_offsets\",\n" +
+                "\t\t\t\t\t\t\"type\": \"text\"\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t},\n" +
+                "\t\t\t\"useState\": {\n" +
+                "\t\t\t\t\"type\": \"integer\"\n" +
+                "\t\t\t}\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "}", XContentType.JSON);
+
+        //设置别名
+        request.alias(
+                new Alias("goods" + "_alias")
+        );
+
+        ////超时等待所有节点确认索引创建为 TimeValue
+        request.timeout(TimeValue.timeValueMinutes(2));
+
+        //作为超时连接到主节点 TimeValue
+        request.masterNodeTimeout(TimeValue.timeValueMinutes(1));
+
+        CreateIndexResponse createIndexResponse = null;
+        //同步执行
+        try {
+            RestHighLevelClient client = getClient();
+            createIndexResponse = client.indices().create(request);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(createIndexResponse.isShardsAcknowledged());
+
+
     }
 
     /**
-     * 创建索引公共方法
+     * 创建索引公共方法，不太适用，不能进行精细化设置，采用json格式
+     * param index 索引
+     * param type   类型
+     * param clazz  es实体类
      */
     public static boolean createIndex(String index, String type, Class clazz) {
 
@@ -182,8 +296,8 @@ public class ElasticsearchClient {
 
         // 设置索引的分片和副本
         request.settings(Settings.builder()
-                .put("index.number_of_shards",3)
-                .put("index.number_of_replicas",2)
+                .put("index.number_of_shards", 3)
+                .put("index.number_of_replicas", 2)
         );
 
 

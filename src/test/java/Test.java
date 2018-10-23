@@ -1,7 +1,9 @@
 import com.alibaba.fastjson.JSONObject;
 import com.netopstec.entity.Goods;
+import com.netopstec.entity.esentity.ESGoods;
 import com.netopstec.service.GoodsService;
 import com.netopstec.util.ElasticsearchClient;
+import com.netopstec.util.PinYinUtil;
 import org.apache.log4j.Logger;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -23,14 +25,13 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.ScoreSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.runner.RunWith;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RunWith(org.springframework.test.context.junit4.SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations="classpath:spring/spring-total.xml")
@@ -55,12 +56,38 @@ public class Test {
     public void dataMysql2Elasticsearch() {
         List<Goods> all = goodsService.findAll();
         Map<String, String> idJsonContentMap = new HashMap<>();
-        all.forEach(goods -> {
-            Long id = goods.getId();
-            String s = JSONObject.toJSONString(goods);
+        for (Goods goods:all ) {
+
+            ESGoods esGoods = new ESGoods();
+            BeanUtils.copyProperties(goods,esGoods);
+            String brand = goods.getBrand();
+            String name = goods.getName();
+            esGoods.setBrand_pinyin(PinYinUtil.getFullSpell(brand));
+            esGoods.setName_pinyin(PinYinUtil.getFullSpell(name));
+            Long id = esGoods.getId();
+            String s = JSONObject.toJSONString(esGoods);
             idJsonContentMap.put(id.toString(),s);
-        });
+            if (idJsonContentMap.size() == 50)  break;
+        }
         boolean b = ElasticsearchClient.insertBatch("test_goods", "goods", idJsonContentMap);
+        System.out.println("执行结果：" + b);
+    }
+
+
+    @org.junit.Test
+    public void insertOne() {
+        Goods goods = new Goods();
+        goods.setName("小可爱002");
+        goods.setBrand("森林狼1");
+        goods.setCreateTime(System.currentTimeMillis());
+        goods.setModifyTime(System.currentTimeMillis());
+        goods.setFlag(0);
+        goods.setId(2000L);
+        goods.setFlag(0);
+        goods.setNote("手动添加");
+        goods.setPrice("100");
+        goods.setUseState(0);
+        boolean b = ElasticsearchClient.insert("test_goods", "goods", "2000", JSONObject.toJSONString(goods));
         System.out.println("执行结果：" + b);
     }
 
@@ -230,5 +257,63 @@ public class Test {
             }
         }
         System.out.println("----------------------------------------------------------");
+    }
+
+
+    /**
+     * 只有一个hengheng-cluster, hengheng-only
+     */
+    @org.junit.Test
+    public void testOnlyOneNode() throws IOException {
+        System.out.println("-------------------------------------------------------------------");
+        // 创建查询
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("test_goods");
+        searchRequest.types("goods");
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        String keyword = "jianpan";
+
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        BoolQueryBuilder keyWordBoolQueryBuilder = new BoolQueryBuilder();
+        // keyWordBoolQueryBuilder.should(QueryBuilders.prefixQuery("name", keyword));
+        // keyWordBoolQueryBuilder.should(QueryBuilders.prefixQuery("name_pinyin", keyword));
+        keyWordBoolQueryBuilder.should(QueryBuilders.prefixQuery("name.ik_smart_pinyin_analyzer", keyword));
+        boolQueryBuilder.must(keyWordBoolQueryBuilder);
+
+        searchSourceBuilder.query(boolQueryBuilder);
+        searchRequest.source(searchSourceBuilder);
+        SearchResponse searchResponse = ElasticsearchClient.getClient().search(searchRequest);
+
+        // response 输出
+        TimeValue took = searchResponse.getTook();
+        System.out.println("请求时间：" + took.toString());
+        boolean timedOut = searchResponse.isTimedOut();
+        System.out.println("是否超时：" + timedOut);
+        SearchHits hits = searchResponse.getHits();
+        long totalHits = hits.getTotalHits();
+        System.out.println("搜索的总条数：" + totalHits);
+        SearchHit[] hits1 = hits.getHits();
+        if (hits1 != null && hits1.length > 0) {
+            for (SearchHit hit: hits1) {
+                String sourceAsString = hit.getSourceAsString();
+                Goods goods = JSONObject.parseObject(sourceAsString, Goods.class);
+                System.out.println(goods);
+            }
+        }
+
+
+        System.out.println("-------------------------------------------------------------------");
+    }
+
+
+    public static void main(String[] args) {
+        List<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("1");
+        list.add("1");
+
+        Set<String> collect = list.stream().filter(s -> "2".equals(s)).collect(Collectors.toSet());
+        System.out.println(collect.size());
     }
 }
